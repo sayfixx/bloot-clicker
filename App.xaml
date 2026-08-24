@@ -1,0 +1,92 @@
+<Application x:Class="Autoclicker.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+
+        <Style TargetType="{x:Type Slider}" x:Key="Sl">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="RangeBase.Minimum" Value="1"/>
+            <Setter Property="RangeBase.Maximum" Value="25"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Slider}">
+                        <Grid>
+                            <Border Name="track" Height="32" CornerRadius="16" Background="#E9E9E9" BorderBrush="#D4D4D4" BorderThickness="1"/>
+                            <Track Name="PART_Track" Margin="10,0">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Focusable="False">
+                                        <Control.Template><ControlTemplate TargetType="{x:Type RepeatButton}"><Border Background="#00FFFFFF"/></ControlTemplate></Control.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Focusable="False">
+                                        <Control.Template><ControlTemplate TargetType="{x:Type RepeatButton}"><Border Background="#00FFFFFF"/></ControlTemplate></Control.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Cursor="Hand">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="{x:Type Thumb}">
+                                                <Border Name="thumb" Width="5" Height="18" CornerRadius="2.5" Background="{DynamicResource ThemeAccentBrush}" RenderTransformOrigin="0.5,0.5">
+                                                    <UIElement.RenderTransform><ScaleTransform x:Name="thumbScale" ScaleX="1" ScaleY="1"/></UIElement.RenderTransform>
+                                                    <UIElement.Effect><DropShadowEffect Color="{DynamicResource ThemeAccentColor}" BlurRadius="12" ShadowDepth="0" Opacity="1"/></UIElement.Effect>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="Thumb.IsDragging" Value="True">
+                                                        <Trigger.EnterActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="thumbScale" Storyboard.TargetProperty="ScaleX" To="1.6" Duration="0:0:0.1"/><DoubleAnimation Storyboard.TargetName="thumbScale" Storyboard.TargetProperty="ScaleY" To="1.2" Duration="0:0:0.1"/></Storyboard></BeginStoryboard></Trigger.EnterActions>
+                                                        <Trigger.ExitActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="thumbScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.1"/><DoubleAnimation Storyboard.TargetName="thumbScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.1"/></Storyboard></BeginStoryboard></Trigger.ExitActions>
+                                                    </Trigger>
+                                                    <Trigger Property="UIElement.IsMouseOver" Value="True">
+                                                        <Trigger.EnterActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="thumbScale" Storyboard.TargetProperty="ScaleX" To="1.3" Duration="0:0:0.12"/></Storyboard></BeginStoryboard></Trigger.EnterActions>
+                                                        <Trigger.ExitActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="thumbScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.12"/></Storyboard></BeginStoryboard></Trigger.ExitActions>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="UIElement.IsMouseOver" Value="True">
+                                <Setter TargetName="track" Property="UIElement.Effect"><Setter.Value><DropShadowEffect Color="{DynamicResource ThemeAccentColor}" BlurRadius="8" ShadowDepth="0" Opacity="0.35"/></Setter.Value></Setter>
+                                <Setter TargetName="track" Property="BorderBrush" Value="{DynamicResource ThemeAccentBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="{x:Type Button}" x:Key="ActBtn">
+            <Setter Property="Background" Value="#0D1A1C"/>
+            <Setter Property="BorderBrush" Value="#1A3035"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#00D4C8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="16,6"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border Name="bg" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <TextBlock Name="t" Text="{TemplateBinding Content}" FontSize="{TemplateBinding FontSize}" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="UIElement.IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="BorderBrush" Value="#00D4C8"/>
+                                <Setter TargetName="bg" Property="Background" Value="#122428"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="t" Property="Foreground" Value="#2A4A4E"/>
+                                <Setter TargetName="bg" Property="BorderBrush" Value="#0D1A1C"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Application.Resources>
+</Application>

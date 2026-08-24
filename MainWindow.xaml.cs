@@ -22,7 +22,6 @@ using XamlAnimatedGif;
 using Autoclicker.Deactivation;
 using Autoclicker.Discord;
 using Autoclicker.Hooks;
-using Autoclicker.Input;
 using Autoclicker.Minecraft;
 using Autoclicker.Window;
 using Autoclicker.PatchDetector;

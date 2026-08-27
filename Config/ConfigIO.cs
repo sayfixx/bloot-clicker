@@ -116,10 +116,10 @@ namespace Autoclicker.Config
 							XElement xelement = XDocument.Load(text).Root.Element("settings");
 							mw.MinCps = int.Parse(xelement.Element("MinCPS").Value);
 							mw.MaxCps = int.Parse(xelement.Element("MaxCPS").Value);
-							mw.OnlyMcbeMode = bool.Parse(xelement.Element("OnlyMinecraft").Value);
-							mw.ClickInInventoryMode = bool.Parse(xelement.Element("ClickInInventory").Value);
+							mw.OnlyMcbeMode = ParseBool(xelement, "OnlyMinecraft", false);
+							mw.ClickInInventoryMode = ParseBool(xelement, "ClickInInventory", false);
 							mw.EasyRefilMode = ConfigIO.ParseBool(xelement, "EasyRefil", false);
-							mw.StreamerMode = bool.Parse(xelement.Element("StreamerMode").Value);
+							mw.StreamerMode = ParseBool(xelement, "StreamerMode", false);
 							mw.HitRegMode = ConfigIO.ParseBool(xelement, "HitRegMode", false);
 							mw.BreakingMode = ConfigIO.ParseBool(xelement, "BreakingMode", false);
 							mw.BreakingGdkMode = ConfigIO.ParseBool(xelement, "BreakingGdkMode", false);

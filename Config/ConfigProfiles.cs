@@ -209,6 +209,7 @@ namespace Autoclicker.Config
 
                 document.Save(destination);
                 try { File.SetAttributes(destination, FileAttributes.Normal); } catch { }
+                File.SetLastWriteTimeUtc(destination, DateTime.UtcNow);
                 EnforceMaximumProfiles(name);
 
                 importedName = name;
@@ -235,6 +236,7 @@ namespace Autoclicker.Config
                 string destination = GetPath(safe);
                 File.Copy(current, destination, true);
                 try { File.SetAttributes(destination, FileAttributes.Normal); } catch { }
+                File.SetLastWriteTimeUtc(destination, DateTime.UtcNow);
                 EnforceMaximumProfiles(safe);
                 return true;
             }

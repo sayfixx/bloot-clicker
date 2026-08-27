@@ -792,25 +792,45 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
 
         public bool IsDarkTheme = false;
 
+        private bool _applyingLoadedState;
+
         public void ApplyLoadedState()
         {
             try
             {
+                _applyingLoadedState = true;
                 ApplyTheme(IsDarkTheme);
+                if (Resources.Contains("ThemeAccentColor") && Resources["ThemeAccentColor"] is Color loadedAccent)
+                {
+                    ApplyAccentColor(loadedAccent);
+                }
                 UpdateMinecraftVersionText();
                 ApplyCharacterImageSettings();
                 if (!string.IsNullOrWhiteSpace(this.BackgroundImagePath))
                     ApplyBackgroundImage();
                 if (this.AutoSprintToggle != null) this.AutoSprintToggle.IsChecked = this.AutoSprintEnabled;
                 if (this.DiscordRpcToggle != null) this.DiscordRpcToggle.IsChecked = this.DiscordRpcEnabled;
+                if (this.OnlyMcGlowToggle != null) this.OnlyMcGlowToggle.IsChecked = this.OnlyMcbeMode;
+                if (this.BreakBlocksGlowToggle != null) this.BreakBlocksGlowToggle.IsChecked = this.BreakingMode;
                 if (this.UtilityItemUseDelayToggle != null) this.UtilityItemUseDelayToggle.IsChecked = this.UtilityItemUseDelayEnabled;
                 if (this.UtilityNoCameraResetToggle != null) this.UtilityNoCameraResetToggle.IsChecked = this.UtilityNoCameraResetEnabled;
                 if (this.UtilityNoHurtCamToggle != null) this.UtilityNoHurtCamToggle.IsChecked = this.UtilityNoHurtCamEnabled;
                 if (this.UtilityPlayScreenFixToggle != null) this.UtilityPlayScreenFixToggle.IsChecked = this.UtilityPlayScreenFixEnabled;
                 UpdateUtilitySupportLabels();
                 SetCharacterImageVisibleForMainPage(!_settingsPageVisible);
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (Resources.Contains("ThemeAccentColor") && Resources["ThemeAccentColor"] is Color c)
+                    {
+                        UpdateColorPickerThumb(c);
+                    }
+                }), System.Windows.Threading.DispatcherPriority.Loaded);
             }
             catch { }
+            finally
+            {
+                _applyingLoadedState = false;
+            }
         }
 
         private void AnimatePanelIn(UIElement panel, TranslateTransform transform)
@@ -1194,6 +1214,21 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
 			e.Handled = true;
 		}
 
+        private void ColorPickerBar_Loaded(object sender, RoutedEventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (Resources.Contains("ThemeAccentColor") && Resources["ThemeAccentColor"] is Color c)
+                    UpdateColorPickerThumb(c);
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+
+        private void ColorPickerBar_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (Resources.Contains("ThemeAccentColor") && Resources["ThemeAccentColor"] is Color c)
+                UpdateColorPickerThumb(c);
+        }
+
 		private void SetAccentFromPickerPoint(double x)
 		{
 			if (ColorPickerBar == null || ColorPickerThumb == null || ColorPickerBar.ActualWidth <= 0)
@@ -1545,7 +1580,7 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
 		private void OnlyMcbeSwitch_Checked(object sender, RoutedEventArgs e)
 		{
 			this.OnlyMcbeMode = true;
-            PlayToggleFeedback(sender as UIElement);
+            if (!_applyingLoadedState) PlayToggleFeedback(sender as UIElement);
 		}
 
 		private void OnlyMcbeSwitch_Unchecked(object sender, RoutedEventArgs e)
@@ -1615,7 +1650,7 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
 		private void BreakingSwitch_Checked(object sender, RoutedEventArgs e)
 		{
 			this.BreakingMode = true;
-            PlayToggleFeedback(sender as UIElement);
+            if (!_applyingLoadedState) PlayToggleFeedback(sender as UIElement);
 			this.BreakingGdkMode = false;
 			if (this.BreakingGdkSwitch != null)
 			{

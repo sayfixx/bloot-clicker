@@ -1504,7 +1504,9 @@
                             Cursor="Hand"
                             MouseLeftButtonDown="ColorPickerBar_MouseLeftButtonDown"
                             MouseMove="ColorPickerBar_MouseMove"
-                            MouseLeftButtonUp="ColorPickerBar_MouseLeftButtonUp">
+                            MouseLeftButtonUp="ColorPickerBar_MouseLeftButtonUp"
+                            Loaded="ColorPickerBar_Loaded"
+                            SizeChanged="ColorPickerBar_SizeChanged">
                             <Border
                                 Height="22"
                                 CornerRadius="11"

@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.CompilerServices;
 using System.Windows.Input;
 
 namespace Autoclicker.Window
@@ -72,24 +71,6 @@ namespace Autoclicker.Window
 					mw.SelectedKey = Key.F6;
 					mw.SelectedMouseButton = null;
 				});
-			}
-			catch
-			{
-			}
-		}
-
-		public static void UpdateSprintLabel(MainWindow mw, string text = null)
-		{
-			try
-			{
-				mw.Dispatcher.BeginInvoke(new Action(delegate()
-				{
-					if (mw.SprintBindText == null)
-					{
-						return;
-					}
-					mw.SprintBindText.Text = (text ?? ((mw.SprintBindMouse != null) ? BindHelper.GetMouseButtonName(mw.SprintBindMouse.Value) : mw.SprintBindKey.ToString()));
-				}), Array.Empty<object>());
 			}
 			catch
 			{

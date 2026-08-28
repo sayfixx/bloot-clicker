@@ -6,15 +6,12 @@ using Autoclicker.Native;
 
 namespace Autoclicker.Clicker
 {
-	// Token: 0x02000017 RID: 23
 	internal static class ClickLoop
 	{
-		// Token: 0x060000FD RID: 253 RVA: 0x000586B0 File Offset: 0x000586B0
 		private static bool _wasClicking = false;
 
 		public static void Run(MainWindow mw, CancellationToken token)
 		{
-			Debug.WriteLine("[DEBUG] ClickLoop.Run started on thread " + Thread.CurrentThread.ManagedThreadId);
 			WinApiSystem.timeBeginPeriod(1U);
 			long frequency = Stopwatch.Frequency;
 			long num = 0L;
@@ -24,7 +21,6 @@ namespace Autoclicker.Clicker
 				bool shouldClick = ClickLoop.ShouldClick(mw);
 				if (shouldClick != ClickLoop._wasClicking)
 				{
-					Debug.WriteLine("[DEBUG] ShouldClick changed to " + shouldClick + " (ClickerEnabled=" + mw.ClickerEnabled + ", UserHoldingLMB=" + mw.UserHoldingLMB + ", OnlyMcbeMode=" + mw.OnlyMcbeMode + ")");
 					ClickLoop._wasClicking = shouldClick;
 				}
 				if (!shouldClick)
@@ -78,7 +74,6 @@ namespace Autoclicker.Clicker
 			WinApiSystem.timeEndPeriod(1U);
 		}
 
-		// Token: 0x060000FE RID: 254 RVA: 0x000587D8 File Offset: 0x000587D8
 		private static bool ShouldClick(MainWindow mw)
 		{
 			if (!mw.ClickerEnabled || !mw.UserHoldingLMB)

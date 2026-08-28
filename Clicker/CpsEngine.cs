@@ -4,10 +4,8 @@ using Autoclicker.Minecraft;
 
 namespace Autoclicker.Clicker
 {
-	// Token: 0x02000019 RID: 25
 	internal static class CpsEngine
 	{
-		// Token: 0x06000102 RID: 258 RVA: 0x00058948 File Offset: 0x00058948
 		public static int GetNext(MainWindow mw)
 		{
 			if (mw.EasyRefilMode && WindowChecker.IsCursorVisible() && WindowChecker.IsActiveCached())
@@ -36,7 +34,6 @@ namespace Autoclicker.Clicker
 			return mw.CurrentCps;
 		}
 
-		// Token: 0x06000103 RID: 259 RVA: 0x00058A48 File Offset: 0x00058A48
 		private static void GenerateNewTarget(MainWindow mw)
 		{
 			try
@@ -78,10 +75,8 @@ namespace Autoclicker.Clicker
 			}
 		}
 
-		// Token: 0x040000DD RID: 221
 		private static long _lastChangeTick;
 
-		// Token: 0x040000DE RID: 222
 		private static long _nextChangeIntervalTicks;
 	}
 }

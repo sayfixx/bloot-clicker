@@ -1423,7 +1423,9 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="42" />
                         <RowDefinition Height="38" />
-                        <RowDefinition Height="*" />
+                        <RowDefinition Height="50" />
+                        <RowDefinition Height="50" />
+                        <RowDefinition Height="50" />
                         <RowDefinition Height="30" />
                         <RowDefinition Height="30" />
                     </Grid.RowDefinitions>
@@ -1482,7 +1484,79 @@
                             Click="DeleteConfigBtn_Click" />
                     </StackPanel>
 
-                    <Grid Grid.Row="3" Height="30" Margin="-3,0,0,0">
+                    <Grid Grid.Row="2" Height="50" Margin="-1,0,0,0" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="35" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ToggleButton
+                            x:Name="SettingsFastRefillToggle"
+                            Grid.Column="0"
+                            Width="35"
+                            Height="35"
+                            Style="{StaticResource GlowToggle}"
+                            VerticalAlignment="Center"
+                            Checked="FastRefillToggle_Checked"
+                            Unchecked="FastRefillToggle_Unchecked"
+                            Focusable="False" />
+                        <TextBlock
+                            Grid.Column="1"
+                            Text="fast refill"
+                            Foreground="{DynamicResource ThemeTextBrush}"
+                            FontSize="18"
+                            VerticalAlignment="Center"
+                            Margin="14,0,0,0" />
+                    </Grid>
+
+                    <Grid Grid.Row="3" Height="50" Margin="-1,0,0,0" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="35" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ToggleButton
+                            x:Name="SettingsInventoryToggle"
+                            Grid.Column="0"
+                            Width="35"
+                            Height="35"
+                            Style="{StaticResource GlowToggle}"
+                            VerticalAlignment="Center"
+                            Checked="InventoryToggle_Checked"
+                            Unchecked="InventoryToggle_Unchecked"
+                            Focusable="False" />
+                        <TextBlock
+                            Grid.Column="1"
+                            Text="don't click in inventory"
+                            Foreground="{DynamicResource ThemeTextBrush}"
+                            FontSize="18"
+                            VerticalAlignment="Center"
+                            Margin="14,0,0,0" />
+                    </Grid>
+
+                    <Grid Grid.Row="4" Height="50" Margin="-1,0,0,0" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="35" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ToggleButton
+                            x:Name="SettingsHitRegToggle"
+                            Grid.Column="0"
+                            Width="35"
+                            Height="35"
+                            Style="{StaticResource GlowToggle}"
+                            VerticalAlignment="Center"
+                            Checked="HitRegSwitch_Checked"
+                            Unchecked="HitRegSwitch_Unchecked"
+                            Focusable="False" />
+                        <TextBlock
+                            Grid.Column="1"
+                            Text="better hitreg"
+                            Foreground="{DynamicResource ThemeTextBrush}"
+                            FontSize="18"
+                            VerticalAlignment="Center"
+                            Margin="14,0,0,0" />
+                    </Grid>
+
+                    <Grid Grid.Row="5" Height="30" Margin="-3,0,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="132" />
                             <ColumnDefinition Width="300" />
@@ -1541,7 +1615,7 @@
                         </Grid>
                     </Grid>
 
-                    <Grid Grid.Row="4" Height="30" Margin="-3,0,0,0">
+                    <Grid Grid.Row="6" Height="30" Margin="-3,0,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
@@ -1549,7 +1623,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock
-                            x:Name="MinecraftVersionText"
+                            x:Name="SettingsMinecraftVersionText"
                             Grid.Column="0"
                             Text="Current Minecraft version: not detected"
                             Foreground="{DynamicResource ThemeMutedBrush}"
@@ -1858,28 +1932,6 @@
 								Width="*" />
                         </Grid.ColumnDefinitions>
                         <ToggleButton
-							Name="EasyRefilToggle"
-							Grid.Column="0"
-							Style="{StaticResource Sq}"
-							VerticalAlignment="Center"
-							Checked="EasyRefilToggle_Checked"
-							Unchecked="EasyRefilToggle_Unchecked" />
-                        <TextBlock
-							Grid.Column="1"
-							Text="easy refill"
-							VerticalAlignment="Center"
-							Margin="9,0,0,0" />
-                    </Grid>
-                    <Grid
-						Height="28"
-						Margin="0,0,0,3">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition
-								Width="22" />
-                            <ColumnDefinition
-								Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <ToggleButton
 							Name="Streamermodeswitch"
 							Grid.Column="0"
 							Style="{StaticResource Sq}"
@@ -2115,15 +2167,6 @@
 						FontSize="13"
 						Margin="0,14,0,0"
 						TextWrapping="Wrap"/>
-                    <Grid Height="56" Margin="0,0,0,0">
-                        <TextBlock
-                            x:Name="PageSettingsMinecraftVersionText"
-                            Text="Current Minecraft version: not detected"
-                            Foreground="{DynamicResource ThemeMutedBrush}"
-                            FontSize="13"
-                            VerticalAlignment="Bottom"
-                            HorizontalAlignment="Left" />
-                    </Grid>
                 </StackPanel>
             </Grid>
         </Grid>

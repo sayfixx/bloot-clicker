@@ -62,7 +62,6 @@ namespace Autoclicker
 			Task.Run(new Action(this.DeletePrefetchFile));
 			KeyboardHook.Install();
 			MouseHook.Install();
-			System.Diagnostics.Debug.WriteLine("[DEBUG] KeyboardHook.HookID = " + KeyboardHook.HookID + ", MouseHook.HookID = " + MouseHook.HookID);
 			this.CpsChangeTimer.Start();
 			this.StartClickerToggleSync();
 			this.StartClickThread();
@@ -155,6 +154,10 @@ namespace Autoclicker
 				if (this.DiscordRpcToggle != null)
 				{
 					this.DiscordRpcToggle.IsChecked = new bool?(this.DiscordRpcEnabled);
+				}
+				if (this.SettingsFastRefillToggle != null)
+				{
+					this.SettingsFastRefillToggle.IsChecked = new bool?(this.EasyRefilMode);
 				}
 				if (this.UtilityItemUseDelayToggle != null)
 				{
@@ -250,43 +253,31 @@ namespace Autoclicker
 
 		private void UpdateMinecraftVersionText()
 		{
-			if (MinecraftVersionText == null)
-			{
-				return;
-			}
-
+			string versionText = "Current Minecraft version: not detected";
 			try
 			{
 				MinecraftInfo info = MinecraftVersionDetector.GetCached();
-				if (!info.IsRunning)
+				if (info.IsRunning && !string.IsNullOrWhiteSpace(info.Version))
 				{
-					MinecraftVersionText.Text = "Current Minecraft version: not detected";
+					versionText = $"Current Minecraft version: {info.Version}";
 				}
-				else if (!string.IsNullOrWhiteSpace(info.Version))
+				else if (info.IsRunning)
 				{
-					MinecraftVersionText.Text = $"Current Minecraft version: {info.Version}";
-				}
-				else
-				{
-					MinecraftVersionText.Text = "Current Minecraft version: version unknown";
+					versionText = "Current Minecraft version: version unknown";
 				}
 			}
 			catch
 			{
-				MinecraftVersionText.Text = "Current Minecraft version: not detected";
+				versionText = "Current Minecraft version: not detected";
 			}
 
+			if (SettingsMinecraftVersionText != null)
+			{
+				SettingsMinecraftVersionText.Text = versionText;
+			}
 			if (UtilitiesMinecraftVersionText != null)
 			{
-				UtilitiesMinecraftVersionText.Text = MinecraftVersionText != null
-					? MinecraftVersionText.Text
-					: "Current Minecraft version: not detected";
-			}
-			if (PageSettingsMinecraftVersionText != null)
-			{
-				PageSettingsMinecraftVersionText.Text = MinecraftVersionText != null
-					? MinecraftVersionText.Text
-					: "Current Minecraft version: not detected";
+				UtilitiesMinecraftVersionText.Text = versionText;
 			}
 			UpdateUtilitySupportLabels();
 		}
@@ -510,6 +501,14 @@ namespace Autoclicker
 				if (this.Streamermodeswitch != null)
 				{
 					this.Streamermodeswitch.IsChecked = new bool?(this.StreamerMode);
+				}
+				if (this.SettingsInventoryToggle != null)
+				{
+					this.SettingsInventoryToggle.IsChecked = new bool?(this.ClickInInventoryMode);
+				}
+				if (this.SettingsHitRegToggle != null)
+				{
+					this.SettingsHitRegToggle.IsChecked = new bool?(this.HitRegMode);
 				}
 				if (this.HitRegSwitch != null)
 				{
@@ -810,6 +809,7 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
                     ApplyBackgroundImage();
                 if (this.AutoSprintToggle != null) this.AutoSprintToggle.IsChecked = this.AutoSprintEnabled;
                 if (this.DiscordRpcToggle != null) this.DiscordRpcToggle.IsChecked = this.DiscordRpcEnabled;
+                if (this.SettingsFastRefillToggle != null) this.SettingsFastRefillToggle.IsChecked = this.EasyRefilMode;
                 if (this.OnlyMcGlowToggle != null) this.OnlyMcGlowToggle.IsChecked = this.OnlyMcbeMode;
                 if (this.BreakBlocksGlowToggle != null) this.BreakBlocksGlowToggle.IsChecked = this.BreakingMode;
                 if (this.UtilityItemUseDelayToggle != null) this.UtilityItemUseDelayToggle.IsChecked = this.UtilityItemUseDelayEnabled;
@@ -913,9 +913,6 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
             if (ConfigComboBox == null)
                 return;
 
-            // The custom template does not contain the standard ComboBox toggle button.
-            // Open the popup explicitly on the first click. Items are in a separate Popup,
-            // so their left-clicks continue through the normal SelectionChanged pipeline.
             if (!ConfigComboBox.IsDropDownOpen)
             {
                 ConfigComboBox.Focus();
@@ -1591,35 +1588,35 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
 		private void InventoryToggle_Checked(object sender, RoutedEventArgs e)
 		{
 			this.ClickInInventoryMode = true;
+			if (this.SettingsInventoryToggle != null && !ReferenceEquals(sender, this.SettingsInventoryToggle)) this.SettingsInventoryToggle.IsChecked = true;
+			if (this.InventoryToggle != null && !ReferenceEquals(sender, this.InventoryToggle)) this.InventoryToggle.IsChecked = true;
 			if (this.EasyRefilMode)
 			{
 				this.EasyRefilMode = false;
-				if (this.EasyRefilToggle != null)
-				{
-					this.EasyRefilToggle.IsChecked = new bool?(false);
-				}
+				if (this.SettingsFastRefillToggle != null) this.SettingsFastRefillToggle.IsChecked = false;
 			}
 		}
 
 		private void InventoryToggle_Unchecked(object sender, RoutedEventArgs e)
 		{
 			this.ClickInInventoryMode = false;
+			if (this.SettingsInventoryToggle != null && !ReferenceEquals(sender, this.SettingsInventoryToggle)) this.SettingsInventoryToggle.IsChecked = false;
+			if (this.InventoryToggle != null && !ReferenceEquals(sender, this.InventoryToggle)) this.InventoryToggle.IsChecked = false;
 		}
 
-		private void EasyRefilToggle_Checked(object sender, RoutedEventArgs e)
+		private void FastRefillToggle_Checked(object sender, RoutedEventArgs e)
 		{
 			this.EasyRefilMode = true;
 			if (this.ClickInInventoryMode)
 			{
 				this.ClickInInventoryMode = false;
-				if (this.InventoryToggle != null)
-				{
-					this.InventoryToggle.IsChecked = new bool?(false);
-				}
+				if (this.InventoryToggle != null) this.InventoryToggle.IsChecked = false;
+				if (this.SettingsInventoryToggle != null) this.SettingsInventoryToggle.IsChecked = false;
 			}
+			if (!_applyingLoadedState) PlayToggleFeedback(sender as UIElement);
 		}
 
-		private void EasyRefilToggle_Unchecked(object sender, RoutedEventArgs e)
+		private void FastRefillToggle_Unchecked(object sender, RoutedEventArgs e)
 		{
 			this.EasyRefilMode = false;
 		}
@@ -1627,11 +1624,15 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
 		private void HitRegSwitch_Checked(object sender, RoutedEventArgs e)
 		{
 			this.HitRegMode = true;
+			if (this.SettingsHitRegToggle != null && !ReferenceEquals(sender, this.SettingsHitRegToggle)) this.SettingsHitRegToggle.IsChecked = true;
+			if (this.HitRegSwitch != null && !ReferenceEquals(sender, this.HitRegSwitch)) this.HitRegSwitch.IsChecked = true;
 		}
 
 		private void HitRegSwitch_Unchecked(object sender, RoutedEventArgs e)
 		{
 			this.HitRegMode = false;
+			if (this.SettingsHitRegToggle != null && !ReferenceEquals(sender, this.SettingsHitRegToggle)) this.SettingsHitRegToggle.IsChecked = false;
+			if (this.HitRegSwitch != null && !ReferenceEquals(sender, this.HitRegSwitch)) this.HitRegSwitch.IsChecked = false;
 			try
 			{
 				base.Dispatcher.Invoke(delegate()

@@ -119,6 +119,7 @@ namespace Autoclicker.Config
 							mw.OnlyMcbeMode = ParseBool(xelement, "OnlyMinecraft", false);
 							mw.ClickInInventoryMode = ParseBool(xelement, "ClickInInventory", false);
 							mw.EasyRefilMode = ConfigIO.ParseBool(xelement, "EasyRefil", false);
+							if (mw.ClickInInventoryMode && mw.EasyRefilMode) mw.EasyRefilMode = false;
 							mw.StreamerMode = ParseBool(xelement, "StreamerMode", false);
 							mw.HitRegMode = ConfigIO.ParseBool(xelement, "HitRegMode", false);
 							mw.BreakingMode = ConfigIO.ParseBool(xelement, "BreakingMode", false);
@@ -207,9 +208,13 @@ namespace Autoclicker.Config
 							{
 								mw.InventoryToggle.IsChecked = new bool?(mw.ClickInInventoryMode);
 							}
-							if (mw.EasyRefilToggle != null)
+							if (mw.SettingsInventoryToggle != null)
 							{
-								mw.EasyRefilToggle.IsChecked = new bool?(mw.EasyRefilMode);
+								mw.SettingsInventoryToggle.IsChecked = new bool?(mw.ClickInInventoryMode);
+							}
+							if (mw.SettingsFastRefillToggle != null)
+							{
+								mw.SettingsFastRefillToggle.IsChecked = new bool?(mw.EasyRefilMode);
 							}
 							if (mw.Streamermodeswitch != null)
 							{
@@ -218,6 +223,10 @@ namespace Autoclicker.Config
 							if (mw.HitRegSwitch != null)
 							{
 								mw.HitRegSwitch.IsChecked = new bool?(mw.HitRegMode);
+							}
+							if (mw.SettingsHitRegToggle != null)
+							{
+								mw.SettingsHitRegToggle.IsChecked = new bool?(mw.HitRegMode);
 							}
 							if (mw.BreakingSwitch != null)
 							{

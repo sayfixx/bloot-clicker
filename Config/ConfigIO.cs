@@ -1,19 +1,15 @@
 using System;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Xml.Linq;
 using Autoclicker.Window;
 
 namespace Autoclicker.Config
 {
-
-			internal static class ConfigIO
+	internal static class ConfigIO
 	{
 
 		public static void Save(MainWindow mw)
@@ -60,16 +56,12 @@ namespace Autoclicker.Config
 						new XElement("BreakingGdkMode", mw.BreakingGdkMode),
 						new XElement("BindKey", mw.SelectedKey.ToString()),
 						new XElement("BindMouseButton", ((mw.SelectedMouseButton != null) ? mw.SelectedMouseButton.GetValueOrDefault().ToString() : null) ?? ""),
-						new XElement("AutoSprint", mw.AutoSprintEnabled),
 						new XElement("DiscordRpc", mw.DiscordRpcEnabled),
 						new XElement("DarkTheme", mw.IsDarkTheme),
-                        new XElement("AccentColor", ((Color)mw.Resources["ThemeAccentColor"]).ToString()),
 						new XElement("UtilityItemUseDelay", mw.UtilityItemUseDelayEnabled),
 						new XElement("UtilityNoCameraReset", mw.UtilityNoCameraResetEnabled),
 						new XElement("UtilityNoHurtCam", mw.UtilityNoHurtCamEnabled),
 						new XElement("UtilityPlayScreenFix", mw.UtilityPlayScreenFixEnabled),
-						new XElement("SprintBindKey", mw.SprintBindKey.ToString()),
-						new XElement("SprintBindMouse", ((mw.SprintBindMouse != null) ? mw.SprintBindMouse.GetValueOrDefault().ToString() : null) ?? ""),
 						new XElement("LastMinecraftExePath", mw.LastMinecraftExePath ?? ""),
 						new XElement("CharacterImagePath", mw.CharacterImagePath ?? ""),
 						new XElement("CharacterOffsetX", mw.CharacterOffsetX),
@@ -124,14 +116,8 @@ namespace Autoclicker.Config
 							mw.HitRegMode = ConfigIO.ParseBool(xelement, "HitRegMode", false);
 							mw.BreakingMode = ConfigIO.ParseBool(xelement, "BreakingMode", false);
 							mw.BreakingGdkMode = ConfigIO.ParseBool(xelement, "BreakingGdkMode", false);
-							mw.AutoSprintEnabled = ConfigIO.ParseBool(xelement, "AutoSprint", false);
 							mw.DiscordRpcEnabled = ConfigIO.ParseBool(xelement, "DiscordRpc", false);
 						mw.IsDarkTheme = ConfigIO.ParseBool(xelement, "DarkTheme", false);
-						XElement accentElement = xelement.Element("AccentColor");
-						if (accentElement != null && TryParseColor(accentElement.Value, out Color accentColor))
-						{
-							mw.ApplyAccentColor(accentColor);
-						}
 							mw.UtilityItemUseDelayEnabled = ConfigIO.ParseBool(xelement, "UtilityItemUseDelay", false);
 							mw.UtilityNoCameraResetEnabled = ConfigIO.ParseBool(xelement, "UtilityNoCameraReset", false);
 							mw.UtilityNoHurtCamEnabled = ConfigIO.ParseBool(xelement, "UtilityNoHurtCam", false);
@@ -158,18 +144,6 @@ namespace Autoclicker.Config
 							if (Enum.TryParse<MouseButton>((xelement5 != null) ? xelement5.Value : null, out value))
 							{
 								mw.SelectedMouseButton = new MouseButton?(value);
-							}
-							XElement xelement6 = xelement.Element("SprintBindKey");
-							Key sprintBindKey;
-							if (Enum.TryParse<Key>((xelement6 != null) ? xelement6.Value : null, out sprintBindKey))
-							{
-								mw.SprintBindKey = sprintBindKey;
-							}
-							XElement xelement7 = xelement.Element("SprintBindMouse");
-							MouseButton value2;
-							if (!string.IsNullOrEmpty((xelement7 != null) ? xelement7.Value : null) && Enum.TryParse<MouseButton>(xelement.Element("SprintBindMouse").Value, out value2))
-							{
-								mw.SprintBindMouse = new MouseButton?(value2);
 							}
 							if (mw.MinCpsSlider != null)
 							{
@@ -236,12 +210,8 @@ namespace Autoclicker.Config
 							{
 								mw.BreakingGdkSwitch.IsChecked = new bool?(mw.BreakingGdkMode);
 							}
-							if (mw.AutoSprintToggle != null)
-							{
-								mw.AutoSprintToggle.IsChecked = new bool?(mw.AutoSprintEnabled);
-							}
+							LoadAccentColor(mw);
 							BindHelper.UpdateBindUI(mw);
-							BindHelper.UpdateSprintLabel(mw, null);
 						}
 					}
 				}
@@ -251,22 +221,41 @@ namespace Autoclicker.Config
 			}
 		}
 
-		private static bool TryParseColor(string value, out Color color)
+		public static void SaveAccentColor(MainWindow mw)
 		{
-			color = Colors.Black;
 			try
 			{
-				object parsed = ColorConverter.ConvertFromString(value);
-				if (parsed is Color parsedColor)
-				{
-					color = parsedColor;
-					return true;
-				}
+				Directory.CreateDirectory(GetAccentDirectory());
+				Color color = (Color)mw.Resources["ThemeAccentColor"];
+				File.WriteAllText(GetAccentPath(), color.ToString());
 			}
 			catch
 			{
 			}
-			return false;
+		}
+
+		private static void LoadAccentColor(MainWindow mw)
+		{
+			try
+			{
+				string path = GetAccentPath();
+				if (!File.Exists(path)) return;
+				object parsed = ColorConverter.ConvertFromString(File.ReadAllText(path).Trim());
+				if (parsed is Color color) mw.ApplyAccentColor(color);
+			}
+			catch
+			{
+			}
+		}
+
+		private static string GetAccentDirectory()
+		{
+			return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "elegies");
+		}
+
+		private static string GetAccentPath()
+		{
+			return Path.Combine(GetAccentDirectory(), "accent.color");
 		}
 
 		private static bool ParseBool(XElement parent, string name, bool def = false)

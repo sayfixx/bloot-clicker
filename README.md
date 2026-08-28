@@ -53,6 +53,12 @@
   <img src="./ReadmeAssets/Снимок экрана 2026-08-28 123807.png" width="400" alt="Bloot Clicker">
 </p>
 
+<p align="center"> <span style="font-size: 100px;"><b>Демонстрация работы в игре:</b></span> </p>
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=LHJ4vfl1I8A">
+    <img src="https://img.youtube.com/vi/LHJ4vfl1I8A/maxresdefault.jpg" width="600" alt="Видео Bloot Clicker">
+  </a>
+</p>
 
 ---
 

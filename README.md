@@ -1,10 +1,10 @@
-#
+<p align="center"> <img src="https://skillicons.dev/icons?i=cs,dotnet,visualstudio,git,github" /> </p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/C%23-512BD4?style=for-the-badge&logo=csharp&logoColor=white" alt="C#"/>
-  <img src="https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET"/>
-  <img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"/>
-</p>
+<p align="center"> <b>⚡ Fast • Lightweight • Modern</b> </p>
+
+<p align="center"> <a href="https://github.com/sayfixx/bloot-clicker/stargazers"> <img src="https://img.shields.io/github/stars/sayfixx/bloot-clicker?style=for-the-badge&logo=github&logoColor=white&label=Stars" /> </a> <a href="https://github.com/sayfixx/bloot-clicker/network/members"> <img src="https://img.shields.io/github/forks/sayfixx/bloot-clicker?style=for-the-badge&logo=github&logoColor=white&label=Forks" /> </a> <a href="https://github.com/sayfixx/bloot-clicker/releases"> <img src="https://img.shields.io/github/downloads/sayfixx/bloot-clicker/total?style=for-the-badge&logo=github&logoColor=white&label=Downloads" /> </a> </p>
+
+<p align="center"> <a href="https://discord.gg/example"> <img src="https://img.shields.io/badge/Discord-Join%20Server-5865F2?style=for-the-badge&logo=discord&logoColor=white" /> </a> <a href="https://t.me/example"> <img src="https://img.shields.io/badge/Telegram-Channel-26A5E4?style=for-the-badge&logo=telegram&logoColor=white" /> </a> <a href="https://github.com/sayfixx/bloot-clicker"> <img src="https://img.shields.io/github/license/sayfixx/bloot-clicker?style=for-the-badge&label=License" /> </a> </p>
 ---
 
 ##

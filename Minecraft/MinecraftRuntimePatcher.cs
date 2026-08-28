@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Linq;
 using System.Threading;
 
@@ -8,43 +10,46 @@ namespace Autoclicker.Minecraft
 {
 	internal sealed class MinecraftRuntimePatcher : IDisposable
 	{
+		private const uint MemCommit = 0x1000;
+		private const uint PageNoAccess = 0x01;
+		private const uint PageGuard = 0x100;
+		private const int ScanChunkSize = 0x1000000;
+
 		public MinecraftRuntimePatcher(MainWindow window)
 		{
-			this._window = window;
-			this._timer = new Timer(new TimerCallback(this.OnTick), null, -1, -1);
+			_window = window;
+			_timer = new Timer(OnTick, null, -1, -1);
 		}
 
 		public void SetEnabled(bool enabled)
 		{
-			object gate = this._gate;
-			lock (gate)
+			lock (_gate)
 			{
-				this._enabled = enabled;
+				_enabled = enabled;
 				if (enabled)
 				{
-					this._timer.Change(0, 1000);
-					this.SetStatus("waiting");
+					_timer.Change(0, 1000);
+					SetStatus("waiting");
 				}
 				else
 				{
-					this._timer.Change(-1, -1);
-					this.RestoreActiveProcess_NoLock();
-					this._patchedProcessId = null;
-					this.SetStatus("patch disabled");
+					_timer.Change(-1, -1);
+					RestoreActiveProcess_NoLock();
+					_patchedProcessId = null;
+					SetStatus("patch disabled");
 				}
 			}
 		}
 
 		public void NotifySelectionChanged()
 		{
-			object gate = this._gate;
-			lock (gate)
+			lock (_gate)
 			{
-				if (this._enabled)
+				if (_enabled)
 				{
-					this.RestoreActiveProcess_NoLock();
-					this._patchedProcessId = null;
-					this._timer.Change(0, 1000);
+					RestoreActiveProcess_NoLock();
+					_patchedProcessId = null;
+					_timer.Change(0, 1000);
 				}
 			}
 		}
@@ -56,235 +61,366 @@ namespace Autoclicker.Minecraft
 
 		public void SetSelection(bool itemUseDelay, bool noCameraReset, bool noHurtCam, bool useGdk)
 		{
-			object gate = this._gate;
-			lock (gate)
+			lock (_gate)
 			{
-				this._itemUseDelay = itemUseDelay;
-				this._noCameraReset = noCameraReset;
-				this._noHurtCam = noHurtCam;
-				this._useGdk = useGdk;
-				if (this._enabled)
+				_itemUseDelay = itemUseDelay;
+				_noCameraReset = noCameraReset;
+				_noHurtCam = noHurtCam;
+				_useGdk = useGdk;
+				if (_enabled)
 				{
-					this.RestoreActiveProcess_NoLock();
-					this._patchedProcessId = null;
-					this._timer.Change(0, 1000);
+					RestoreActiveProcess_NoLock();
+					_patchedProcessId = null;
+					_timer.Change(0, 1000);
 				}
 			}
 		}
 
 		public void Dispose()
 		{
-			object gate = this._gate;
-			lock (gate)
+			lock (_gate)
 			{
-				this._timer.Change(-1, -1);
-				this.RestoreActiveProcess_NoLock();
-				this._timer.Dispose();
+				_timer.Change(-1, -1);
+				RestoreActiveProcess_NoLock();
+				_timer.Dispose();
 			}
 		}
 
 		private void OnTick(object state)
 		{
-			object gate = this._gate;
-			lock (gate)
+			lock (_gate)
 			{
-				if (this._enabled)
+				if (!_enabled)
 				{
-					Process process = this.FindMinecraftProcess();
-					if (process == null)
+					return;
+				}
+
+				Process process = FindMinecraftProcess();
+				if (process == null)
+				{
+					if (_patchedProcessId != null)
 					{
-						if (this._patchedProcessId != null)
-						{
-							this._applied.Clear();
-							this._patchedProcessId = null;
-							this.SetStatus("minecraft closed");
-						}
+						_applied.Clear();
+						_patchedProcessId = null;
 					}
-					else
+					SetStatus("waiting for Minecraft");
+					return;
+				}
+
+				try
+				{
+					if (_patchedProcessId == process.Id && _applied.Count > 0)
 					{
-						int? patchedProcessId = this._patchedProcessId;
-						int id = process.Id;
-						if ((patchedProcessId.GetValueOrDefault() == id & patchedProcessId != null) && this._applied.Count > 0)
-						{
-							this.SetStatus("patched");
-						}
-						else
-						{
-							if (this._patchedProcessId != null)
-							{
-								patchedProcessId = this._patchedProcessId;
-								id = process.Id;
-								if (!(patchedProcessId.GetValueOrDefault() == id & patchedProcessId != null))
-								{
-									this.RestoreActiveProcess_NoLock();
-									this._patchedProcessId = null;
-								}
-							}
-							this.ApplyToProcess_NoLock(process);
-						}
+						SetStatus("patched");
+						return;
 					}
+
+					if (_patchedProcessId != null && _patchedProcessId != process.Id)
+					{
+						RestoreActiveProcess_NoLock();
+						_patchedProcessId = null;
+					}
+
+					ApplyToProcess_NoLock(process);
+				}
+				finally
+				{
+					try { process.Dispose(); } catch { }
 				}
 			}
 		}
 
 		private void ApplyToProcess_NoLock(Process process)
 		{
-			IReadOnlyList<RuntimePatchDefinition> selectedPatches = this.GetSelectedPatches();
+			IReadOnlyList<RuntimePatchDefinition> selectedPatches = GetSelectedPatches();
 			if (selectedPatches.Count == 0)
 			{
-				this.SetStatus("idle");
+				SetStatus("idle");
 				return;
 			}
-			IntPtr intPtr = NativeMethods.OpenProcess(NativeMethods.ProcessAccessFlags.VirtualMemoryOperation | NativeMethods.ProcessAccessFlags.VirtualMemoryRead | NativeMethods.ProcessAccessFlags.VirtualMemoryWrite | NativeMethods.ProcessAccessFlags.QueryInformation, false, process.Id);
-			if (intPtr == IntPtr.Zero)
+
+			IntPtr handle = NativeMethods.OpenProcess(
+				NativeMethods.ProcessAccessFlags.VirtualMemoryOperation |
+				NativeMethods.ProcessAccessFlags.VirtualMemoryRead |
+				NativeMethods.ProcessAccessFlags.VirtualMemoryWrite |
+				NativeMethods.ProcessAccessFlags.QueryInformation,
+				false,
+				process.Id);
+
+			if (handle == IntPtr.Zero)
 			{
-				this.SetStatus("failed to open process");
+				SetStatus("failed to open process");
 				return;
 			}
+
 			try
 			{
-				ProcessModule mainModule = process.MainModule;
-				if (mainModule == null)
+				List<ProcessModule> modules = GetScanModules(process);
+				if (modules.Count == 0)
 				{
-					this.SetStatus("failed to access module");
+					SetStatus("no Minecraft modules found");
+					return;
+				}
+
+				_applied.Clear();
+				var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+				foreach (RuntimePatchDefinition patch in selectedPatches)
+				{
+					if (TryFindPatch(handle, modules, patch, out IntPtr address, out byte[] originalBytes, out string moduleName))
+					{
+						byte[] replacement = BuildReplacement(patch);
+						if (replacement.Length == 0 || replacement.Length != originalBytes.Length)
+						{
+							continue;
+						}
+
+						if (NativeMethods.WriteProcessMemory(handle, address, replacement, replacement.Length, out IntPtr written) && written.ToInt64() == replacement.Length)
+						{
+							_applied.Add(new AppliedPatch(process.Id, patch, address, originalBytes));
+							found.Add(patch.Id + "@" + moduleName);
+						}
+					}
+				}
+
+				if (_applied.Count > 0)
+				{
+					_patchedProcessId = process.Id;
+					SetStatus("patched: " + string.Join(", ", found));
 				}
 				else
 				{
-					byte[] array = new byte[mainModule.ModuleMemorySize];
-					IntPtr intPtr2;
-					if (!NativeMethods.ReadProcessMemory(intPtr, mainModule.BaseAddress, array, array.Length, out intPtr2) || intPtr2.ToInt64() <= 0L)
+					_patchedProcessId = null;
+					SetStatus("no signatures matched");
+				}
+			}
+			catch
+			{
+				SetStatus("failed to scan or patch process");
+			}
+			finally
+			{
+				NativeMethods.CloseHandle(handle);
+			}
+		}
+
+		private static byte[] BuildReplacement(RuntimePatchDefinition patch)
+		{
+			switch (patch.ApplyKind)
+			{
+				case PatchApplyKind.Nop:
+					return Enumerable.Repeat((byte)0x90, patch.Length).ToArray();
+				case PatchApplyKind.NopCall5:
+					return Enumerable.Repeat((byte)0x90, 5).ToArray();
+				case PatchApplyKind.WriteFloat:
+					return BitConverter.GetBytes(patch.FloatValue);
+				default:
+					return HexBytes.Parse(patch.ReplacementHex);
+			}
+		}
+
+		private static bool TryFindPatch(IntPtr handle, IReadOnlyList<ProcessModule> modules, RuntimePatchDefinition patch, out IntPtr address, out byte[] originalBytes, out string moduleName)
+		{
+			var patterns = new List<SignaturePattern> { SignaturePattern.Parse(patch.Signature) };
+			if (!string.IsNullOrWhiteSpace(patch.FallbackSignature) && !string.Equals(patch.FallbackSignature, patch.Signature, StringComparison.OrdinalIgnoreCase))
+			{
+				patterns.Add(SignaturePattern.Parse(patch.FallbackSignature));
+			}
+
+			foreach (SignaturePattern pattern in patterns)
+			{
+				foreach (ProcessModule module in modules)
+			{
+				if (TryFindPatternInModule(handle, module, pattern, out IntPtr foundAddress))
+				{
+					IntPtr patchAddress = IntPtr.Add(foundAddress, patch.PatchOffset);
+					byte[] replacement = BuildReplacement(patch);
+					if (replacement.Length == 0)
 					{
-						this.SetStatus("failed to read memory");
+						break;
 					}
-					else
+
+					originalBytes = new byte[replacement.Length];
+					if (NativeMethods.ReadProcessMemory(handle, patchAddress, originalBytes, originalBytes.Length, out IntPtr read) && read.ToInt64() == originalBytes.Length)
 					{
-						this._applied.Clear();
-						foreach (RuntimePatchDefinition runtimePatchDefinition in selectedPatches)
-						{
-							SignaturePattern pattern = SignaturePattern.Parse(runtimePatchDefinition.Signature);
-							int num = PatternScanner.Find(array, pattern);
-							if (num >= 0)
-							{
-								IntPtr intPtr3 = IntPtr.Add(mainModule.BaseAddress, num + runtimePatchDefinition.PatchOffset);
-								byte[] array2;
-								IntPtr intPtr4;
-								byte[] array3;
-								switch (runtimePatchDefinition.ApplyKind)
-								{
-								case PatchApplyKind.Nop:
-								{
-									int num2 = runtimePatchDefinition.Length;
-									array2 = new byte[num2];
-									if (!NativeMethods.ReadProcessMemory(intPtr, intPtr3, array2, num2, out intPtr4))
-									{
-										continue;
-									}
-									array3 = Enumerable.Repeat<byte>(144, num2).ToArray<byte>();
-									break;
-								}
-								case PatchApplyKind.NopCall5:
-								{
-									int num2 = 5;
-									array2 = new byte[num2];
-									if (!NativeMethods.ReadProcessMemory(intPtr, intPtr3, array2, num2, out intPtr4))
-									{
-										continue;
-									}
-									array3 = new byte[]
-									{
-										144,
-										144,
-										144,
-										144,
-										144
-									};
-									break;
-								}
-								case PatchApplyKind.WriteFloat:
-								{
-									int num2 = 4;
-									array2 = new byte[num2];
-									if (!NativeMethods.ReadProcessMemory(intPtr, intPtr3, array2, num2, out intPtr4))
-									{
-										continue;
-									}
-									array3 = BitConverter.GetBytes(runtimePatchDefinition.FloatValue);
-									break;
-								}
-								default:
-								{
-									array3 = HexBytes.Parse(runtimePatchDefinition.ReplacementHex);
-									int num2 = array3.Length;
-									array2 = new byte[num2];
-									if (!NativeMethods.ReadProcessMemory(intPtr, intPtr3, array2, num2, out intPtr4))
-									{
-										continue;
-									}
-									break;
-								}
-								}
-								if (NativeMethods.WriteProcessMemory(intPtr, intPtr3, array3, array3.Length, out intPtr4))
-								{
-									this._applied.Add(new AppliedPatch(process.Id, runtimePatchDefinition, intPtr3, array2));
-								}
-							}
-						}
-						if (this._applied.Count > 0)
-						{
-							this._patchedProcessId = new int?(process.Id);
-							this.SetStatus("patched");
-						}
-						else
-						{
-							this._patchedProcessId = null;
-							this.SetStatus("no signatures matched");
-						}
+						address = patchAddress;
+						moduleName = module.ModuleName;
+						return true;
+					}
+				}
+				}
+			}
+
+			address = IntPtr.Zero;
+			originalBytes = Array.Empty<byte>();
+			moduleName = string.Empty;
+			return false;
+		}
+
+		private static bool TryFindPatternInModule(IntPtr handle, ProcessModule module, SignaturePattern pattern, out IntPtr address)
+		{
+			address = IntPtr.Zero;
+			long start = module.BaseAddress.ToInt64();
+			long end = start + module.ModuleMemorySize;
+			long cursor = start;
+
+			while (cursor < end)
+			{
+				UIntPtr queried = NativeMethods.VirtualQueryEx(handle, new IntPtr(cursor), out NativeMethods.MEMORY_BASIC_INFORMATION info, (UIntPtr)MarshalSizeOfMemoryBasicInformation());
+				if (queried == UIntPtr.Zero)
+				{
+					break;
+				}
+
+				long regionStart = info.BaseAddress.ToInt64();
+				long regionSize = info.RegionSize.ToUInt64() > long.MaxValue ? long.MaxValue : (long)info.RegionSize.ToUInt64();
+				if (regionSize <= 0)
+				{
+					break;
+				}
+
+				long regionEnd = Math.Min(end, regionStart + regionSize);
+				if (info.State == MemCommit && IsReadable(info.Protect))
+				{
+					long readStart = Math.Max(regionStart, start);
+					long readEnd = Math.Min(regionEnd, end);
+					if (TryScanRange(handle, readStart, readEnd, pattern, out address))
+					{
+						return true;
+					}
+				}
+
+				if (regionEnd <= cursor)
+				{
+					break;
+				}
+				cursor = regionEnd;
+			}
+
+			return false;
+		}
+
+		private static bool TryScanRange(IntPtr handle, long start, long end, SignaturePattern pattern, out IntPtr address)
+		{
+			address = IntPtr.Zero;
+			int patternLength = pattern.Bytes.Length;
+			long cursor = start;
+			int overlap = Math.Max(0, patternLength - 1);
+
+			while (cursor < end)
+			{
+				int size = (int)Math.Min(ScanChunkSize, end - cursor);
+				byte[] buffer = new byte[size];
+				if (!NativeMethods.ReadProcessMemory(handle, new IntPtr(cursor), buffer, buffer.Length, out IntPtr read) || read.ToInt64() != buffer.Length)
+				{
+					cursor += size;
+					continue;
+				}
+
+				int pos = PatternScanner.Find(buffer, pattern);
+				if (pos >= 0)
+				{
+					address = IntPtr.Add(new IntPtr(cursor), pos);
+					return true;
+				}
+
+				if (size <= overlap)
+				{
+					break;
+				}
+				cursor += size - overlap;
+			}
+
+			return false;
+		}
+
+		private static bool IsReadable(uint protect)
+		{
+			if ((protect & PageGuard) != 0 || (protect & 0xff) == PageNoAccess)
+			{
+				return false;
+			}
+
+			uint mode = protect & 0xff;
+			return mode == 0x02 || mode == 0x04 || mode == 0x08 || mode == 0x20 || mode == 0x40 || mode == 0x80;
+		}
+
+		private static int MarshalSizeOfMemoryBasicInformation()
+		{
+			return IntPtr.Size == 8 ? 48 : 28;
+		}
+
+		private static List<ProcessModule> GetScanModules(Process process)
+		{
+			var result = new List<ProcessModule>();
+			string mainPath = SafeGetMainModuleFileName(process);
+			string mainDirectory = null;
+			if (!string.IsNullOrWhiteSpace(mainPath))
+			{
+				try { mainDirectory = Path.GetDirectoryName(mainPath); } catch { }
+			}
+
+			try
+			{
+				foreach (ProcessModule module in process.Modules)
+				{
+					string path = null;
+					try { path = module.FileName; } catch { }
+					bool sameDirectory = !string.IsNullOrWhiteSpace(mainDirectory) && !string.IsNullOrWhiteSpace(path) && string.Equals(Path.GetDirectoryName(path), mainDirectory, StringComparison.OrdinalIgnoreCase);
+					bool minecraftName = module.ModuleName.StartsWith("Minecraft", StringComparison.OrdinalIgnoreCase);
+					if (sameDirectory || minecraftName)
+					{
+						result.Add(module);
 					}
 				}
 			}
 			catch
 			{
-				this.SetStatus("failed");
 			}
-			finally
+
+			if (result.Count == 0)
 			{
-				NativeMethods.CloseHandle(intPtr);
 				try
 				{
-					process.Dispose();
+					if (process.MainModule != null)
+					{
+						result.Add(process.MainModule);
+					}
 				}
 				catch
-				{
+			{
 				}
 			}
+
+			return result.GroupBy(m => m.BaseAddress).Select(g => g.First()).ToList();
 		}
 
 		private void RestoreActiveProcess_NoLock()
 		{
-			if (this._applied.Count == 0 || this._patchedProcessId == null)
+			if (_applied.Count == 0 || _patchedProcessId == null)
 			{
-				this._applied.Clear();
+				_applied.Clear();
 				return;
 			}
+
 			try
 			{
-				Process processById = Process.GetProcessById(this._patchedProcessId.Value);
-				IntPtr intPtr = NativeMethods.OpenProcess(NativeMethods.ProcessAccessFlags.VirtualMemoryOperation | NativeMethods.ProcessAccessFlags.VirtualMemoryWrite | NativeMethods.ProcessAccessFlags.QueryInformation, false, processById.Id);
-				if (intPtr != IntPtr.Zero)
-				{
-					foreach (AppliedPatch appliedPatch in this._applied)
-					{
-						IntPtr intPtr2;
-						NativeMethods.WriteProcessMemory(intPtr, appliedPatch.Address, appliedPatch.OriginalBytes, appliedPatch.OriginalBytes.Length, out intPtr2);
-					}
-					NativeMethods.CloseHandle(intPtr);
-				}
+				Process process = Process.GetProcessById(_patchedProcessId.Value);
 				try
 				{
-					processById.Dispose();
+					IntPtr handle = NativeMethods.OpenProcess(NativeMethods.ProcessAccessFlags.VirtualMemoryOperation | NativeMethods.ProcessAccessFlags.VirtualMemoryWrite | NativeMethods.ProcessAccessFlags.QueryInformation, false, process.Id);
+					if (handle != IntPtr.Zero)
+					{
+						foreach (AppliedPatch patch in _applied)
+						{
+							NativeMethods.WriteProcessMemory(handle, patch.Address, patch.OriginalBytes, patch.OriginalBytes.Length, out _);
+						}
+						NativeMethods.CloseHandle(handle);
+					}
 				}
-				catch
+				finally
 				{
+					process.Dispose();
 				}
 			}
 			catch
@@ -292,103 +428,66 @@ namespace Autoclicker.Minecraft
 			}
 			finally
 			{
-				this._applied.Clear();
+				_applied.Clear();
 			}
 		}
 
 		private IReadOnlyList<RuntimePatchDefinition> GetSelectedPatches()
 		{
 			var list = new List<RuntimePatchDefinition>();
-			if (this._itemUseDelay)
+			if (_itemUseDelay)
 			{
-				list.Add(this._useGdk ? RuntimePatchCatalog.GdkItemUseDelay : RuntimePatchCatalog.LegacyItemUseDelay);
+				list.Add(_useGdk ? RuntimePatchCatalog.GdkItemUseDelay : RuntimePatchCatalog.LegacyItemUseDelay);
 			}
-			if (this._noCameraReset)
+			if (_noCameraReset)
 			{
-				list.Add(this._useGdk ? RuntimePatchCatalog.GdkTeleportRotation : RuntimePatchCatalog.LegacyTeleportRotation);
+				list.Add(_useGdk ? RuntimePatchCatalog.GdkTeleportRotation : RuntimePatchCatalog.LegacyTeleportRotation);
 			}
-			if (this._noHurtCam)
+			if (_noHurtCam)
 			{
-				list.Add(this._useGdk ? RuntimePatchCatalog.GdkNoHurtCam : RuntimePatchCatalog.LegacyNoHurtCam);
+				list.Add(_useGdk ? RuntimePatchCatalog.GdkNoHurtCam : RuntimePatchCatalog.LegacyNoHurtCam);
 			}
 			return list;
 		}
 
 		private Process FindMinecraftProcess()
 		{
-			string[] candidates = new string[]
-			{
-				"Minecraft.Windows",
-				"bedrock",
-				"mcbe"
-			};
-			Process result;
+			string[] candidates = { "Minecraft.Windows", "Minecraft", "MinecraftUWP", "bedrock", "mcbe" };
 			try
 			{
-				Process process = this.TryGetForegroundMinecraftProcess();
-				if (process != null)
+				Process foreground = TryGetForegroundMinecraftProcess();
+				if (foreground != null)
 				{
-					result = process;
+					return foreground;
 				}
-				else
-				{
-					result = Process.GetProcesses().Where(delegate(Process p)
+
+				return Process.GetProcesses()
+					.Where(p =>
 					{
-						bool result2;
 						try
 						{
 							string name = p.ProcessName;
-							if (string.Equals(name, "MinecraftLauncher", StringComparison.OrdinalIgnoreCase))
-							{
-								result2 = false;
-							}
-							else if (candidates.Any((string c) => string.Equals(c, name, StringComparison.OrdinalIgnoreCase)) || name.StartsWith("Minecraft-", StringComparison.OrdinalIgnoreCase))
-							{
-								result2 = true;
-							}
-							else
-							{
-								string text = MinecraftRuntimePatcher.SafeGetMainModuleFileName(p);
-								result2 = (text != null && text.EndsWith("Minecraft.Windows.exe", StringComparison.OrdinalIgnoreCase));
-							}
+							if (name.Equals("MinecraftLauncher", StringComparison.OrdinalIgnoreCase)) return false;
+							if (candidates.Any(c => name.Equals(c, StringComparison.OrdinalIgnoreCase)) || name.StartsWith("Minecraft-", StringComparison.OrdinalIgnoreCase)) return true;
+							string path = SafeGetMainModuleFileName(p);
+							return path != null && path.EndsWith("Minecraft.Windows.exe", StringComparison.OrdinalIgnoreCase);
 						}
-						catch
-						{
-							result2 = false;
-						}
-						return result2;
-					}).OrderByDescending(delegate(Process p)
+						catch { return false; }
+					})
+					.OrderByDescending(p =>
 					{
-						int result2;
-						try
-						{
-							result2 = ((p.MainWindowHandle != IntPtr.Zero) ? 1 : 0);
-						}
-						catch
-						{
-							result2 = 0;
-						}
-						return result2;
-					}).ThenByDescending(delegate(Process p)
+						try { return p.MainWindowHandle != IntPtr.Zero ? 1 : 0; } catch { return 0; }
+					})
+					.ThenByDescending(p =>
 					{
-						DateTime result2;
-						try
-						{
-							result2 = p.StartTime;
-						}
-						catch
-						{
-							result2 = DateTime.MinValue;
-						}
-						return result2;
-					}).FirstOrDefault<Process>();
-				}
+						try { return p.StartTime; } catch { return DateTime.MinValue; }
+					})
+					.FirstOrDefault();
 			}
 			catch
 			{
-				result = null;
+				return null;
 			}
-			return result;
 		}
 
 		private Process TryGetForegroundMinecraftProcess()
@@ -396,26 +495,16 @@ namespace Autoclicker.Minecraft
 			try
 			{
 				IntPtr foregroundWindow = NativeMethods.GetForegroundWindow();
-				if (foregroundWindow == IntPtr.Zero)
+				if (foregroundWindow == IntPtr.Zero) return null;
+				NativeMethods.GetWindowThreadProcessId(foregroundWindow, out uint processId);
+				if (processId == 0) return null;
+				Process process = Process.GetProcessById((int)processId);
+				string path = SafeGetMainModuleFileName(process);
+				if ((path != null && path.EndsWith("Minecraft.Windows.exe", StringComparison.OrdinalIgnoreCase)) || (process.MainWindowTitle ?? string.Empty).IndexOf("minecraft", StringComparison.OrdinalIgnoreCase) >= 0)
 				{
-					return null;
+					return process;
 				}
-				uint num;
-				NativeMethods.GetWindowThreadProcessId(foregroundWindow, out num);
-				if (num == 0U)
-				{
-					return null;
-				}
-				Process processById = Process.GetProcessById((int)num);
-				string text = MinecraftRuntimePatcher.SafeGetMainModuleFileName(processById);
-				if (text != null && text.EndsWith("Minecraft.Windows.exe", StringComparison.OrdinalIgnoreCase))
-				{
-					return processById;
-				}
-				if ((processById.MainWindowTitle ?? string.Empty).IndexOf("minecraft", StringComparison.OrdinalIgnoreCase) >= 0)
-				{
-					return processById;
-				}
+				process.Dispose();
 			}
 			catch
 			{
@@ -425,39 +514,26 @@ namespace Autoclicker.Minecraft
 
 		private static string SafeGetMainModuleFileName(Process process)
 		{
-			string result;
-			try
-			{
-				ProcessModule mainModule = process.MainModule;
-				result = ((mainModule != null) ? mainModule.FileName : null);
-			}
-			catch
-			{
-				result = null;
-			}
-			return result;
+			try { return process.MainModule?.FileName; } catch { return null; }
 		}
 
 		private void SetStatus(string text)
 		{
-			this._window.Dispatcher.BeginInvoke(new Action(delegate()
+			_window.Dispatcher.BeginInvoke(new Action(() =>
 			{
-
-			}), Array.Empty<object>());
+				if (_window.PatchStatusBlock != null)
+				{
+					_window.PatchStatusBlock.Text = text;
+				}
+			}), System.Windows.Threading.DispatcherPriority.Background);
 		}
 
 		private readonly MainWindow _window;
-
 		private readonly object _gate = new object();
-
 		private readonly Timer _timer;
-
 		private bool _enabled;
-
 		private int? _patchedProcessId;
-
 		private readonly List<AppliedPatch> _applied = new List<AppliedPatch>();
-
 		private bool _itemUseDelay;
 		private bool _noCameraReset;
 		private bool _noHurtCam;

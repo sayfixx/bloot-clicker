@@ -4,10 +4,11 @@ namespace Autoclicker.Minecraft
 {
     internal sealed class RuntimePatchDefinition : IEquatable<RuntimePatchDefinition>
     {
-        public RuntimePatchDefinition(string id, string signature, int patchOffset, PatchApplyKind applyKind, string replacementHex = "", int length = 0, float floatValue = 0f)
+        public RuntimePatchDefinition(string id, string signature, int patchOffset, PatchApplyKind applyKind, string replacementHex = "", int length = 0, float floatValue = 0f, string fallbackSignature = null)
         {
             Id = id;
             Signature = signature;
+            FallbackSignature = fallbackSignature;
             PatchOffset = patchOffset;
             ApplyKind = applyKind;
             ReplacementHex = replacementHex;
@@ -18,6 +19,8 @@ namespace Autoclicker.Minecraft
         public string Id { get; set; }
 
         public string Signature { get; set; }
+
+        public string FallbackSignature { get; set; }
 
         public int PatchOffset { get; set; }
 
@@ -45,6 +48,7 @@ namespace Autoclicker.Minecraft
             if (ReferenceEquals(this, other)) return true;
             return Id == other.Id
                 && Signature == other.Signature
+                && FallbackSignature == other.FallbackSignature
                 && PatchOffset == other.PatchOffset
                 && ApplyKind == other.ApplyKind
                 && ReplacementHex == other.ReplacementHex
@@ -59,6 +63,7 @@ namespace Autoclicker.Minecraft
                 int hash = typeof(RuntimePatchDefinition).GetHashCode();
                 hash = hash * -1521134295 + (Id?.GetHashCode() ?? 0);
                 hash = hash * -1521134295 + (Signature?.GetHashCode() ?? 0);
+                hash = hash * -1521134295 + (FallbackSignature?.GetHashCode() ?? 0);
                 hash = hash * -1521134295 + PatchOffset.GetHashCode();
                 hash = hash * -1521134295 + ApplyKind.GetHashCode();
                 hash = hash * -1521134295 + (ReplacementHex?.GetHashCode() ?? 0);

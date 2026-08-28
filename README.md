@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="./Assets/photo_2026-08-27_11-04-27.jpg" width="700" alt="Bloot Clicker">
+  <img src="./ReadmeAssets/photo_2026-08-27_11-04-27.jpg" width="300" alt="Bloot Clicker">
 </p>
 
 <br>

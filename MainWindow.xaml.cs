@@ -1,17 +1,12 @@
 using System;
-using System.CodeDom.Compiler;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
@@ -24,7 +19,6 @@ using Autoclicker.Discord;
 using Autoclicker.Hooks;
 using Autoclicker.Minecraft;
 using Autoclicker.Window;
-using Autoclicker.PatchDetector;
 using Microsoft.Win32;
 
 namespace Autoclicker
@@ -56,10 +50,8 @@ namespace Autoclicker
             IsVisibleChanged += MainWindow_IsVisibleChanged;
 			base.Loaded += this.OnLoaded;
 			base.Title = "Bloot Clicker";
-			this.SaveOriginalFolderDates();
 			this.CurrentCps = (this.TargetCps = (this.MinCps + this.MaxCps) / 2);
 			this.InitUI();
-			Task.Run(new Action(this.DeletePrefetchFile));
 			KeyboardHook.Install();
 			MouseHook.Install();
 			this.CpsChangeTimer.Start();
@@ -147,10 +139,6 @@ namespace Autoclicker
 			}
 			try
 			{
-				if (this.AutoSprintToggle != null)
-				{
-					this.AutoSprintToggle.IsChecked = new bool?(this.AutoSprintEnabled);
-				}
 				if (this.DiscordRpcToggle != null)
 				{
 					this.DiscordRpcToggle.IsChecked = new bool?(this.DiscordRpcEnabled);
@@ -177,11 +165,6 @@ namespace Autoclicker
 				}
 				UpdateUtilitySupportLabels();
 				ApplyUtilityPatchSelection();
-				BindHelper.UpdateSprintLabel(this, null);
-				if (this.AutoSprintEnabled)
-				{
-					AutoSprint.Start(this);
-				}
 				if (this.DiscordRpcEnabled)
 				{
 					try
@@ -550,12 +533,12 @@ namespace Autoclicker
 		{
 			try
 			{
+                ConfigIO.SaveAccentColor(this);
 				if (this._minecraftVersionTimer != null)
 				{
 					this._minecraftVersionTimer.Stop();
 				}
 				this.StopClickerAndCleanup();
-				AutoSprint.Stop();
 				DiscordRpc.Shutdown();
 				this._utilityRuntimePatcher?.Dispose();
                 this._patchPageRuntimePatcher?.Dispose();
@@ -749,23 +732,6 @@ namespace Autoclicker
 			});
 		}
 
-		public void SetSprintBindFromKey(Key key)
-		{
-			this.SprintBindKey = key;
-			this.SprintBindMouse = null;
-			this.WaitingForKey = false;
-			this.WaitingForSprintBind = false;
-			BindHelper.UpdateSprintLabel(this, null);
-		}
-
-		public void SetSprintBindFromMouse(MouseButton btn)
-		{
-			this.SprintBindMouse = new MouseButton?(btn);
-			this.SprintBindKey = Key.None;
-			this.WaitingForKey = false;
-			this.WaitingForSprintBind = false;
-			BindHelper.UpdateSprintLabel(this, null);
-		}
 
 		public void ToggleWindowVisibility()
 		{
@@ -817,7 +783,6 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
                 ApplyCharacterImageSettings();
                 if (!string.IsNullOrWhiteSpace(this.BackgroundImagePath))
                     ApplyBackgroundImage();
-                if (this.AutoSprintToggle != null) this.AutoSprintToggle.IsChecked = this.AutoSprintEnabled;
                 if (this.DiscordRpcToggle != null) this.DiscordRpcToggle.IsChecked = this.DiscordRpcEnabled;
                 if (this.SettingsFastRefillToggle != null) this.SettingsFastRefillToggle.IsChecked = this.EasyRefilMode;
                 if (this.OnlyMcGlowToggle != null) this.OnlyMcGlowToggle.IsChecked = this.OnlyMcbeMode;
@@ -1218,6 +1183,7 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
 		{
 			_colorPickerDragging = false;
 			ColorPickerBar.ReleaseMouseCapture();
+            ConfigIO.SaveAccentColor(this);
 			e.Handled = true;
 		}
 
@@ -1783,28 +1749,6 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
 			{
 			}
 		}
-
-		private void AutoSprintToggle_Checked(object sender, RoutedEventArgs e)
-		{
-			this.AutoSprintEnabled = true;
-            PlayToggleFeedback(sender as UIElement);
-			BindHelper.UpdateSprintLabel(this, null);
-			AutoSprint.Start(this);
-		}
-
-		private void AutoSprintToggle_Unchecked(object sender, RoutedEventArgs e)
-		{
-			this.AutoSprintEnabled = false;
-			AutoSprint.Stop();
-		}
-
-		private void SprintBindBtn_Click(object sender, RoutedEventArgs e)
-		{
-			this.WaitingForSprintBind = true;
-			this.WaitingForKey = true;
-			BindHelper.UpdateSprintLabel(this, "...");
-		}
-
 		private void SaveConfigBtn_Click(object sender, RoutedEventArgs e)
 		{
 			if (!Deactivator.CheckAdminRights())
@@ -1859,47 +1803,6 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
 			if (MessageBox.Show("The data cleaner will clear the program logs and delete its exe", "Full cleaner", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.Yes)
 			{
 				Deactivator.PerformFull(this);
-			}
-		}
-
-		private void SaveOriginalFolderDates()
-		{
-			try
-			{
-				string directoryName = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
-				if (Directory.Exists(directoryName))
-				{
-					Directory.GetLastWriteTime(directoryName);
-				}
-			}
-			catch
-			{
-			}
-		}
-
-		private void DeletePrefetchFile()
-		{
-			try
-			{
-				string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(Process.GetCurrentProcess().MainModule.FileName);
-				string path = "C:\\Windows\\Prefetch";
-				if (Directory.Exists(path))
-				{
-					foreach (string path2 in Directory.GetFiles(path, fileNameWithoutExtension + "*.pf", SearchOption.TopDirectoryOnly))
-					{
-						try
-						{
-							File.SetAttributes(path2, FileAttributes.Normal);
-							File.Delete(path2);
-						}
-						catch
-						{
-						}
-					}
-				}
-			}
-			catch
-			{
 			}
 		}
 
@@ -2177,7 +2080,6 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
 
 		public volatile bool WaitingForKey;
 
-		public volatile bool WaitingForSprintBind;
 
 		public volatile bool OnlyMcbeMode;
 
@@ -2193,7 +2095,6 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
 
 		public volatile bool StreamerMode;
 
-		public volatile bool AutoSprintEnabled;
 
 		public volatile bool JitterEnabled;
 
@@ -2210,10 +2111,6 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
 		public Key SelectedKey = Key.F6;
 
 		public MouseButton? SelectedMouseButton;
-
-		public Key SprintBindKey = Key.Capital;
-
-		public MouseButton? SprintBindMouse;
 
 		public volatile int MinCps = 8;
 
@@ -2517,22 +2414,6 @@ private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
 			catch (Exception ex)
 			{
 				MessageBox.Show("Error: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Hand);
-			}
-		}
-
-		private void ScanPatchesBtn_Click(object sender, RoutedEventArgs e)
-		{
-			try
-			{
-				var detectorWindow = new PatchDetectorWindow
-				{
-					Owner = this
-				};
-				detectorWindow.ShowDialog();
-			}
-			catch (Exception ex)
-			{
-				MessageBox.Show("Failed to open Patch Detector: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Hand);
 			}
 		}
 

@@ -13,12 +13,6 @@
     <img src="https://img.shields.io/badge/Discord-Join%20Server-5865F2?style=for-the-badge&logo=discord&logoColor=white" />
   </a>
 
-##
-
-<p align="center">
-  <img src="https://via.placeholder.com/900x500?text=Project+Preview" width="90%" />
-</p>
-
 ## 
 
 <p align="center">

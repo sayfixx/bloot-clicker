@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using Autoclicker.Native;
+using Autoclicker.Minecraft;
 
 namespace Autoclicker.Clicker
 {
@@ -19,18 +20,18 @@ namespace Autoclicker.Clicker
 				{
 					if (!ClickSender._breakingHoldActive)
 					{
-						WinApiMouse.mouse_event(2U, 0, 0, 0U, MainWindow.CLICKER_EXTRA_INFO);
+						ClickSender.SendDown(mw);
 						ClickSender._breakingHoldActive = true;
 						return;
 					}
-					WinApiMouse.mouse_event(4U, 0, 0, 0U, MainWindow.CLICKER_EXTRA_INFO);
+					ClickSender.SendUp(mw);
 					Thread.Sleep(1);
-					WinApiMouse.mouse_event(2U, 0, 0, 0U, MainWindow.CLICKER_EXTRA_INFO);
+					ClickSender.SendDown(mw);
 					return;
 				}
 				else if (ClickSender._breakingHoldActive)
 				{
-					WinApiMouse.mouse_event(4U, 0, 0, 0U, MainWindow.CLICKER_EXTRA_INFO);
+					ClickSender.SendUp(mw);
 					ClickSender._breakingHoldActive = false;
 					return;
 				}
@@ -38,7 +39,7 @@ namespace Autoclicker.Clicker
 			else
 			{
 				ClickSender._breakingHoldActive = false;
-				WinApiMouse.mouse_event(2U, 0, 0, 0U, MainWindow.CLICKER_EXTRA_INFO);
+				ClickSender.SendDown(mw);
 				if (mw.HitRegMode)
 				{
 					long target = Stopwatch.GetTimestamp() + Stopwatch.Frequency / 1000L;
@@ -48,15 +49,50 @@ namespace Autoclicker.Clicker
 				{
 					Thread.Sleep(6);
 				}
-				WinApiMouse.mouse_event(4U, 0, 0, 0U, MainWindow.CLICKER_EXTRA_INFO);
+				ClickSender.SendUp(mw);
 			}
 		}
 
-		public static void ResetBreakingHold()
+		private static void SendDown(MainWindow mw)
+		{
+			if (IsGdk(mw))
+			{
+				if (!WinApiMouse.TrySendMouseInput(WinApiMouse.MI_LEFTDOWN, MainWindow.CLICKER_EXTRA_INFO))
+					WinApiMouse.SendGdkClick(true);
+				return;
+			}
+			WinApiMouse.mouse_event(WinApiMouse.MOUSEEVENTF_LEFTDOWN, 0, 0, 0U, MainWindow.CLICKER_EXTRA_INFO);
+		}
+
+		private static void SendUp(MainWindow mw)
+		{
+			if (IsGdk(mw))
+			{
+				if (!WinApiMouse.TrySendMouseInput(WinApiMouse.MI_LEFTUP, MainWindow.CLICKER_EXTRA_INFO))
+					WinApiMouse.SendGdkClick(false);
+				return;
+			}
+			WinApiMouse.mouse_event(WinApiMouse.MOUSEEVENTF_LEFTUP, 0, 0, 0U, MainWindow.CLICKER_EXTRA_INFO);
+		}
+
+		private static bool IsGdk(MainWindow mw)
+		{
+			try
+			{
+				MinecraftInfo info = MinecraftVersionDetector.GetCached();
+				return info.IsRunning && info.Edition == MinecraftEdition.Bedrock;
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		public static void ResetBreakingHold(MainWindow mw)
 		{
 			if (ClickSender._breakingHoldActive)
 			{
-				WinApiMouse.mouse_event(4U, 0, 0, 0U, MainWindow.CLICKER_EXTRA_INFO);
+				ClickSender.SendUp(mw);
 				ClickSender._breakingHoldActive = false;
 			}
 		}

@@ -26,7 +26,7 @@ namespace Autoclicker.Clicker
 				if (!shouldClick)
 				{
 					num = 0L;
-					ClickSender.ResetBreakingHold();
+					ClickSender.ResetBreakingHold(mw);
 					Thread.Sleep(1);
 				}
 				else

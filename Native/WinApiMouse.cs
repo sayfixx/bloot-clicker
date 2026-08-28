@@ -29,11 +29,11 @@ namespace Autoclicker.Native
 		[DllImport("user32.dll")]
 		public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 
-		public static void SendMouseInput(uint flags, UIntPtr extraInfo)
+		public static bool TrySendMouseInput(uint flags, UIntPtr extraInfo)
 		{
 			WinApiMouse.INPUT input = new WinApiMouse.INPUT
 			{
-				type = 0U,
+				type = WinApiMouse.INPUT_MOUSE,
 				u = new WinApiMouse.INPUT_UNION
 				{
 					mi = new WinApiMouse.MOUSEINPUT
@@ -47,8 +47,9 @@ namespace Autoclicker.Native
 					}
 				}
 			};
-			WinApiMouse.SendInput(1U, new WinApiMouse.INPUT[] { input }, Marshal.SizeOf(typeof(WinApiMouse.INPUT)));
+			return WinApiMouse.SendInput(1U, new WinApiMouse.INPUT[] { input }, Marshal.SizeOf(typeof(WinApiMouse.INPUT))) == 1U;
 		}
+
 
 		public static void SendGdkClick(bool down)
 		{

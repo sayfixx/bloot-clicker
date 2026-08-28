@@ -337,15 +337,25 @@ namespace Autoclicker
 			return version <= new Version(1, 21, 114);
 		}
 
-		private void UpdateUtilitySupportLabels()
+		private bool TryGetRunningMinecraftVersion(out Version version)
 		{
-			bool known = false;
-			Version version = null;
+			version = null;
 			try
 			{
-				known = TryGetMinecraftVersion(out version);
+				MinecraftInfo info = MinecraftVersionDetector.GetCached();
+				return info.IsRunning && !string.IsNullOrWhiteSpace(info.Version) &&
+					Version.TryParse(info.Version, out version);
 			}
-			catch { }
+			catch
+			{
+				return false;
+			}
+		}
+
+		private void UpdateUtilitySupportLabels()
+		{
+			Version version;
+			bool known = TryGetRunningMinecraftVersion(out version);
 
 			if (this.UtilityItemUseDelaySupportText != null)
 			{

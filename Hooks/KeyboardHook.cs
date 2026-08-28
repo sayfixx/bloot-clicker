@@ -53,7 +53,6 @@ namespace Autoclicker.Hooks
 						{
 							mainWindow.BindKeyPressed = true;
 							mainWindow.SetClickerEnabled(!mainWindow.ClickerEnabled);
-							Debug.WriteLine("[DEBUG] Toggle key pressed -> ClickerEnabled = " + mainWindow.ClickerEnabled);
 						}
 						else if (wParam == (IntPtr)257)
 						{

@@ -8,16 +8,13 @@ using Autoclicker.Native;
 
 namespace Autoclicker.Hooks
 {
-	// Token: 0x0200000F RID: 15
 	internal static class MouseHook
 	{
-		// Token: 0x060000BF RID: 191 RVA: 0x00056434 File Offset: 0x00056434
 		public static void Install()
 		{
 			MouseHook.HookID = HookSetup.SetMouseHook(MouseHook._proc);
 		}
 
-		// Token: 0x060000C0 RID: 192 RVA: 0x00056448 File Offset: 0x00056448
 		public static void Uninstall()
 		{
 			if (MouseHook.HookID != IntPtr.Zero)
@@ -27,7 +24,6 @@ namespace Autoclicker.Hooks
 			}
 		}
 
-		// Token: 0x060000C1 RID: 193 RVA: 0x0005646C File Offset: 0x0005646C
 		private static IntPtr Callback(int nCode, IntPtr wParam, IntPtr lParam)
 		{
 			if (nCode < 0)
@@ -88,7 +84,6 @@ namespace Autoclicker.Hooks
 					{
 						MouseHook._lastDownTimestamp = Stopwatch.GetTimestamp();
 						mainWindow.UserHoldingLMB = true;
-						Debug.WriteLine("[DEBUG] Real LMB down -> UserHoldingLMB = true, ClickerEnabled = " + mainWindow.ClickerEnabled + ", OnlyMcbeMode = " + mainWindow.OnlyMcbeMode);
 					}
 					else if (num == 514)
 					{
@@ -114,7 +109,6 @@ namespace Autoclicker.Hooks
 			return HookSetup.CallNextHookEx(MouseHook.HookID, nCode, wParam, lParam);
 		}
 
-		// Token: 0x060000C2 RID: 194 RVA: 0x00056700 File Offset: 0x00056700
 		private static MouseButton? ResolveButton(int msg, MSLLHOOKSTRUCT hs)
 		{
 			if (msg == 513)
@@ -145,7 +139,6 @@ namespace Autoclicker.Hooks
 			return new MouseButton?(MouseButton.XButton2);
 		}
 
-		// Token: 0x060000C3 RID: 195 RVA: 0x0005677C File Offset: 0x0005677C
 		private static bool IsBindDown(int msg, MSLLHOOKSTRUCT hs, MouseButton bind)
 		{
 			if (msg == 513 && bind == MouseButton.Left)
@@ -168,7 +161,6 @@ namespace Autoclicker.Hooks
 			return false;
 		}
 
-		// Token: 0x060000C4 RID: 196 RVA: 0x000567E0 File Offset: 0x000567E0
 		private static bool IsBindUp(int msg, MSLLHOOKSTRUCT hs, MouseButton bind)
 		{
 			if (msg == 514 && bind == MouseButton.Left)
@@ -191,16 +183,12 @@ namespace Autoclicker.Hooks
 			return false;
 		}
 
-		// Token: 0x040000CD RID: 205
 		public static IntPtr HookID = IntPtr.Zero;
 
-		// Token: 0x040000CE RID: 206
 		private static readonly HookSetup.LowLevelMouseProc _proc = new HookSetup.LowLevelMouseProc(MouseHook.Callback);
 
-		// Token: 0x040000CF RID: 207
 		private static long _lastDownTimestamp = 0L;
 
-		// Token: 0x040000D0 RID: 208
 		private static long _lastUpTimestamp = 0L;
 	}
 }

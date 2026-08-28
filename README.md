@@ -11,8 +11,8 @@
     <img src="https://img.shields.io/github/stars/sayfixx/bloot-clicker?style=for-the-badge&logo=github&logoColor=white&label=Stars" />
   </a>
 
-  <a href="https://github.com/sayfixx/bloot-clicker/releases">
-    <img src="https://img.shields.io/github/downloads/sayfixx/bloot-clicker/total?style=for-the-badge&logo=github&logoColor=white&label=Downloads" />
+  <a href="https://github.com/sayfixx/bloot-clicker/releases/latest">
+    <img src="https://img.shields.io/badge/Download-Latest%20Release-success?style=for-the-badge&logo=github" />
   </a>
 </p>
 
@@ -25,7 +25,7 @@
 
 <br>
 
-
+---
 <p align="center">
   <a href="https://github.com/sayfixx">
     <img src="https://img.shields.io/badge/GitHub-sayfixx-181717?style=for-the-badge&logo=github&logoColor=white" />
@@ -36,12 +36,5 @@
   </a>
 </p>
 
----
 
-<p align="center">
-  <a href="https://github.com/sayfixx/bloot-clicker/releases/latest">
-    <img src="https://img.shields.io/badge/Download-Latest%20Release-success?style=for-the-badge&logo=github" />
-  </a>
-</p>
 
----

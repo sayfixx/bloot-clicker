@@ -55,11 +55,6 @@ namespace Autoclicker.Hooks
 						MouseButton? mouseButton = MouseHook.ResolveButton(num, msllhookstruct);
 						if (mouseButton != null)
 						{
-							if (mainWindow.WaitingForSprintBind)
-							{
-								mainWindow.SetSprintBindFromMouse(mouseButton.Value);
-								return HookSetup.CallNextHookEx(MouseHook.HookID, nCode, wParam, lParam);
-							}
 							mainWindow.SetClickerBindFromMouse(mouseButton.Value);
 							return HookSetup.CallNextHookEx(MouseHook.HookID, nCode, wParam, lParam);
 						}

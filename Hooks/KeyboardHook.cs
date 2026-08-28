@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
@@ -39,11 +38,6 @@ namespace Autoclicker.Hooks
 				{
 					if (mainWindow.WaitingForKey && wParam == (IntPtr)256)
 					{
-						if (mainWindow.WaitingForSprintBind)
-						{
-							mainWindow.SetSprintBindFromKey(key);
-							return HookSetup.CallNextHookEx(KeyboardHook.HookID, nCode, wParam, lParam);
-						}
 						mainWindow.SetClickerBindFromKey(key);
 						return HookSetup.CallNextHookEx(KeyboardHook.HookID, nCode, wParam, lParam);
 					}
